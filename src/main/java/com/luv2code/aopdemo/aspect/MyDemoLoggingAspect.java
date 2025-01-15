@@ -3,9 +3,8 @@ package com.luv2code.aopdemo.aspect;
 
 import com.luv2code.aopdemo.Account;
 import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.AfterReturning;
-import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.*;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -78,6 +77,11 @@ public class MyDemoLoggingAspect {
     }
 
 
+
+
+    // This method converts the names of a list of Account objects to uppercase.
+    // It iterates through each Account in the provided list, retrieves the current name,
+    // converts it to uppercase, and sets the new uppercase name back to the Account object.
     private void convertAccountNamesToUpperCase(List<Account> accounts) {
         for(Account account : accounts) {
             String oldName = account.getName();
@@ -85,6 +89,92 @@ public class MyDemoLoggingAspect {
             account.setName(upperCaseName);
         }
     }
+
+
+
+
+
+    // the @AfterThrowing annotation to specify that the advice should run after an exception is thrown.
+    // The method logs the name of the method being advised and the exception that was thrown.
+    @AfterThrowing(
+            pointcut = "execution(* com.luv2code.aopdemo.dao.AccountDAO.findAccounts(..))",
+            throwing = "theException")
+    public void afterThrowingFindAccountAdvice(JoinPoint theJoinPoint, Throwable theException) {
+        // print out which method we are advising on
+        String method = theJoinPoint.getSignature().toShortString();
+        System.out.println("\n\n ===>>> Executing @AfterThrowing on method: " + method);
+        // log the exception
+        System.out.println("\n ===>>> the exception is: " + theException);
+    }
+
+
+
+
+    // This method is an advice that runs after the execution of the `findAccounts` method in the `AccountDAO` class,
+    // regardless of whether the method completes successfully or throws an exception (i.e., it runs in a "finally" block manner).
+    //It prints out the name of the method being advised to provide logging or debugging information.
+    @After("execution(* com.luv2code.aopdemo.dao.AccountDAO.findAccounts(..))")
+    public void afterFinallyFindAccountsAdvice(JoinPoint theJoinPoint) {
+        // print out which method we are advising on
+        String method = theJoinPoint.getSignature().toShortString();
+        System.out.println("\n ===>>> Executing @After (finally) on method: " + method);
+    }
+
+
+
+
+
+    /**
+     * This method is an @Around advice that intercepts the execution of any method matching the pattern
+     * `com.luv2code.aopdemo.service.*.getFortune(..)`. It wraps the target method's execution, allowing
+     * for custom behavior before and after the method is invoked.
+
+     * Key functionalities:
+     * 1. Logs the method being advised for debugging or monitoring purposes.
+     * 2. Measures the execution time of the target method by capturing timestamps before and after its execution.
+     * 3. Computes and logs the duration of the method execution in seconds.
+     * 4. Returns the result of the target method to ensure the original behavior is preserved.
+     */
+    @Around("execution(* com.luv2code.aopdemo.service.*.getFortune(..))")
+    public Object aroundGetFortune(
+            ProceedingJoinPoint theProceedingJoinPoint) throws Throwable {
+
+        // print out method we are advising on
+        String method = theProceedingJoinPoint.getSignature().toShortString();
+        System.out.println("\n ===>>> Executing @Around on method: " + method);
+
+        // get begin timeStamp
+        long begin = System.currentTimeMillis();
+
+        // now let's execute the method
+        Object result =null;
+
+        try {
+            result = theProceedingJoinPoint.proceed();
+        }
+        catch (Exception exc) {
+            // log the exception
+            System.out.println(exc.getMessage());
+
+            // give user a custom message
+            //result = "Major Accident! your AOP is on the way";
+
+            // rethrow the exception
+            throw  exc;
+        }
+
+        // get end timeStamp
+        long end = System.currentTimeMillis();
+
+        // compute duration and display it
+        long duration = end - begin;
+        System.out.println("\n ===>>> Duration: " + duration/1000.0 + " seconds");
+
+        return result;
+    }
+
+
+
 
 
 
